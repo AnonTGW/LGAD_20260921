@@ -1,0 +1,6 @@
+test
+
+用途：验证 GitHub 推送凭据（SSH 公钥）是否已注册成功。
+工程：AnonTGW/LGAD_20260921
+主机：localhost.localdomain  Sentaurus Workbench W-2024.09-SP1
+日期：2026-09-21
