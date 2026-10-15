@@ -1,0 +1,78 @@
+File {
+  Grid      = "n@node|sde@_msh.tdr"
+  Plot      = "n@node@_des.tdr"
+  Current   = "n@node@_cur.plt"
+  Output    = "n@node@_des.log"
+  ACExtract = "n@node@_ac.plt"
+}
+
+Electrode {
+  { Name = "anode"    Voltage = 0.0  AreaFactor = 1 }
+  { Name = "cathode"  Voltage = 0.0  AreaFactor = 1 }
+}
+
+Physics {
+  Fermi
+  Mobility(
+    DopingDep
+    eHighFieldSaturation( GradQuasiFermi )
+    hHighFieldSaturation( GradQuasiFermi )
+  )
+  Recombination(
+    SRH
+    eAvalanche( OkutoCrowell )
+    hAvalanche( OkutoCrowell )
+  )
+  HeavyIon (
+    Direction  = (0, 1)
+    StartPoint = (150, -50, 0)
+    Length     = 50
+    Time       = 1.0e-9
+    Wt_hi      = 1.0
+    LET_f      = 1.3e-5
+    Gaussian
+    PicoCoulomb
+  )
+}
+
+Plot {
+  eDensity hDensity
+  TotalCurrent/Vector
+  ElectricField/Vector Potential
+  Doping
+  eAvalancheIntegral AvalancheGeneration
+  eImpactIonization
+}
+
+Math {
+  RelErrControl
+  ErrRef(electron) = 1.e8
+  ErrRef(hole)     = 1.e8
+  Iterations       = 50
+  Method           = Blocked
+  SubMethod        = Super
+  ACMethod         = Blocked
+  ACSubMethod      = Super
+  ImplicitACSystem
+}
+
+Solve {
+
+  NewCurrentPrefix = "B284_"
+  Quasistationary (
+    InitialStep = 0.5
+    Increment   = 1.2
+    MaxStep     = 1
+    MinStep     = 1e-6
+    Goal        { name = anode Voltage = +284 }
+  ) { Coupled { Poisson Electron Hole } }
+  NewCurrentFile = "T284_"
+  Transient (
+    InitialTime = 0
+    FinalTime   = 5e-9
+    InitialStep = 1e-13
+    Increment   = 1.3
+    MinStep     = 1e-17
+    MaxStep     = 1.5e-11
+  ) { Coupled { Poisson Electron Hole } }
+}

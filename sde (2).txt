@@ -1,0 +1,105 @@
+(sde:clear)
+(sde:set-process-up-direction "+z")
+(sdegeo:set-default-boolean "ABA")
+(sde:assign-material-and-region-names "all")
+(define Xmax 500)
+(define Ymax -50)
+(define Xanode 300)
+(define XJTE 330)
+(define HOxide 1)
+
+(sdegeo:create-rectangle
+(position 0.0 0.0 0.0)
+(position Xmax Ymax 0.0)
+"Silicon" "EPI"
+)
+(sdegeo:create-rectangle
+(position Xanode Ymax 0.0)
+(position Xmax (- Ymax HOxide) 0.0)
+"SiO2" "SiO2"
+)
+
+(sdegeo:define-contact-set "anode"
+4.0 (color:rgb 1.0 0.0 0.0) "##")
+(sdegeo:define-contact-set "cathode"
+4.0 (color:rgb 0.0 0.0 1.0) "##")
+(sdegeo:define-2d-contact
+(find-edge-id (position 0.1 Ymax 0.0))
+"anode"
+)
+(sdegeo:define-2d-contact
+(find-edge-id (position 0.1 0.0 0.0))
+"cathode"
+)
+(sdedr:define-constant-profile "Const.EPI"
+    "BoronActiveConcentration" 6e12)
+(sdedr:define-constant-profile-material "PL.EPI"
+    "Const.EPI" "Silicon")
+(sdedr:define-gaussian-profile "DD.cathode"
+    "BoronActiveConcentration"
+    "PeakPos" 0 "PeakVal" 1e19
+    "ValueAtDepth" 6e12 "Depth" 0.5
+    "Gauss" "Factor" 0.0)
+(sdedr:define-refeval-window "Baseline.cathode"
+    "Line"
+    (position 0 0 0)
+    (position (* Xmax 1) 0 0))
+(sdedr:define-analytical-profile-placement "PL.cathode"
+    "DD.cathode" "Baseline.cathode"
+    "Negative" "NoReplace" "Eval")
+(sdedr:define-gaussian-profile "DD.anode"
+    "PhosphorusActiveConcentration"
+    "PeakPos" 0 "PeakVal" 1e19
+    "ValueAtDepth" 6e12 "Depth" 0.5
+    "Gauss" "Factor" 0.1)
+(sdedr:define-refeval-window "Baseline.anode"
+    "Line"
+    (position 0 Ymax 0)
+    (position Xanode Ymax 0))
+(sdedr:define-analytical-profile-placement "PL.anode"
+    "DD.anode" "Baseline.anode"
+    "Positive" "NoReplace" "Eval")
+(sdedr:define-gaussian-profile "DD.GainLayer"
+    "BoronActiveConcentration"
+    "PeakPos" 0 "PeakVal" @gain@
+    "ValueAtDepth" 6e12 "Depth" 3
+    "Gauss" "Factor" 0.1)
+(sdedr:define-gaussian-profile "DD.NJET"
+    "PhosphorusActiveConcentration"
+    "PeakPos" 0 "PeakVal" 1e16
+    "ValueAtDepth" 6e12 "Depth" 5
+    "Gauss" "Factor" 0.85)
+(sdedr:define-refeval-window "Baseline.NJET"
+    "Line"
+    (position Xanode Ymax 0)
+    (position XJTE  Ymax 0))
+(sdedr:define-refeval-window "Baseline.GainLayer"
+    "Line"
+    (position 0 Ymax 0)
+    (position Xanode Ymax 0))
+#if @JTE@
+(sdedr:define-analytical-profile-placement "PL.NJET"
+    "DD.NJET" "Baseline.NJET"
+    "Positive" "NoReplace" "Eval")
+#endif
+#if @LGAD@
+(sdedr:define-analytical-profile-placement "PL.GainLayer"
+    "DD.GainLayer" "Baseline.GainLayer"
+    "Positive" "NoReplace" "Eval")
+#endif
+(sdedr:define-refeval-window "RW.Global"
+    "Rectangle"
+    (position -10000 -10000 0) (position 10000 10000 0))
+(sdedr:define-refinement-size "RD.Global"
+    (* Xmax 8e-2) (* Ymax -4e-2)
+    0.05 0.05 )
+(sdedr:define-refinement-function "RD.Global"
+    "DopingConcentration" "MaxTransDiff" 1.0)
+(sdedr:define-refinement-placement "RPL.Global"
+    "RD.Global" "RW.Global")
+(sdedr:define-refeval-window "RW.Track"
+    "Rectangle" (position 140 -52 0) (position 160 2 0))
+(sdedr:define-refinement-size "RD.Track" 0.5 0.5 0.05 0.05)
+(sdedr:define-refinement-placement "RPL.Track" "RD.Track" "RW.Track")
+(sde:build-mesh "n@node@_half_msh")
+(system:command "tdx -mtt -x -ren \"\" n@node@_half_msh n@node@_msh")
